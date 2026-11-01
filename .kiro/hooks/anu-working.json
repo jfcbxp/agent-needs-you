@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Agent Needs You - Working",
+      "trigger": "UserPromptSubmit",
+      "description": "Posts WorkingSubmit event to Agent Needs You board when user sends a prompt",
+      "action": {
+        "type": "command",
+        "command": "powershell -Command \"Invoke-WebRequest -Uri 'http://192.168.68.232/hook' -Method POST -ContentType 'application/json' -Body '{\\\"hook_event_name\\\":\\\"UserPromptSubmit\\\",\\\"session_id\\\":\\\"kiro\\\",\\\"agent\\\":\\\"kiro\\\",\\\"message\\\":\\\"\\\"}' -UseBasicParsing | Out-Null\""
+      }
+    }
+  ]
+}

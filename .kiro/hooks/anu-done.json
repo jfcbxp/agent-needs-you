@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Agent Needs You - Done",
+      "trigger": "Stop",
+      "description": "Posts Stop event to Agent Needs You board when Kiro finishes responding",
+      "action": {
+        "type": "command",
+        "command": "powershell -Command \"Invoke-WebRequest -Uri 'http://192.168.68.232/hook' -Method POST -ContentType 'application/json' -Body '{\\\"hook_event_name\\\":\\\"Stop\\\",\\\"session_id\\\":\\\"kiro\\\",\\\"agent\\\":\\\"kiro\\\",\\\"message\\\":\\\"\\\"}' -UseBasicParsing | Out-Null\""
+      }
+    }
+  ]
+}
