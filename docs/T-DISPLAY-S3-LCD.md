@@ -110,14 +110,100 @@ Install by copying the extension folder to:
 
 Then reload the VS Code window.
 
-## Build and flash
+## Complete setup from a Windows machine
+
+The following commands install the tools used by this project, compile it and
+perform a complete flash. Run PowerShell as your normal user; only run the
+board installer as administrator if Windows requests it.
+
+### 1. Install Python packages
 
 ```powershell
+python -m pip install --upgrade pip
+python -m pip install platformio pyserial esptool
+```
+
+PlatformIO installs the ESP32 platform and the Arduino framework automatically
+when the project dependencies are resolved. The manifest already declares:
+
+- Arduino-GFX 1.4.9
+- ArduinoJson 7.2.1
+- U8g2 2.36.17
+
+### 2. Clone the repository and identify the serial port
+
+```powershell
+Set-Location C:\Users\$env:USERNAME\Documents
+git clone https://github.com/jfcbxp/agent-needs-you.git
+Set-Location C:\Users\$env:USERNAME\Documents\agent-needs-you
+Get-PnpDevice -PresentOnly | Where-Object {
+  $_.InstanceId -match 'VID_303A' -or $_.FriendlyName -match 'USB.*Serial'
+}
+```
+
+Replace `COM9` in `platformio.ini` if Windows assigned another serial port:
+
+```ini
+upload_port = COM9
+monitor_port = COM9
+```
+
+### 3. Erase the complete flash and install the firmware
+
+This removes Agent Needs You, Doom or another ESP32-S3 application left in the
+flash. Wi-Fi settings stored by Agent Needs You are also removed.
+
+```powershell
+python -m platformio run -e tdisplay-s3-lcd -t erase
 python -m platformio run -e tdisplay-s3-lcd -t upload
+```
+
+After restarting, hold the right button for five seconds if you need Wi-Fi
+setup, or use serial command `setup`. The board shows its IP after connecting.
+
+Monitor the serial output:
+
+```powershell
 python -m platformio device monitor -p COM9 -b 115200
 ```
 
 If COM9 changes, update `upload_port` and `monitor_port` in `platformio.ini` or pass the actual port to PlatformIO.
+
+### 4. Install the Copilot extension
+
+The board is not USB-monitored by the Copilot extension. A Copilot extension
+must run inside VS Code and send session events over the local network.
+
+```powershell
+$src = "C:\Users\$env:USERNAME\Documents\agent-needs-you\vscode-extension"
+$dst = "$env:USERPROFILE\.vscode\extensions\anu-copilot-0.1.0"
+New-Item -Path $dst -ItemType Directory -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $src '*') -Destination $dst -Recurse -Force
+```
+
+Then open VS Code, run **Developer: Reload Window**, and set:
+
+```text
+anuCopilot.boardUrl = http://<board-ip>
+```
+
+### 5. Install the Kiro extension
+
+```powershell
+$src = "C:\Users\$env:USERNAME\Documents\agent-needs-you\vscode-extension\kiro-extension"
+$dst = "$env:USERPROFILE\.kiro\extensions\anu-kiro-0.1.0"
+New-Item -Path $dst -ItemType Directory -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $src '*') -Destination $dst -Recurse -Force
+```
+
+Then run **Developer: Reload Window** in Kiro and set:
+
+```text
+anuKiro.boardUrl = http://<board-ip>
+```
+
+Reloading both VS Code/Copilot and Kiro activates both independent monitors.
+They can run simultaneously; each one posts its own session state to the board.
 
 ## Failure patterns
 

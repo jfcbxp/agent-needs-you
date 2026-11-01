@@ -26,6 +26,22 @@ The screen rotates through the sessions, most urgent first (needs you > working 
 
 LilyGO T-Display S3 LCD (ESP32-S3R8, 16 MB flash, 8 MB PSRAM, ST7789 170x320 over 8-bit Intel 8080). Powered over USB. LCD pin and software notes are in [docs/T-DISPLAY-S3-LCD.md](docs/T-DISPLAY-S3-LCD.md).
 
+## Windows install and complete flash
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install platformio pyserial esptool
+Set-Location C:\Users\$env:USERNAME\Documents
+git clone https://github.com/jfcbxp/agent-needs-you.git
+Set-Location agent-needs-you
+python -m platformio run -e tdisplay-s3-lcd -t erase
+python -m platformio run -e tdisplay-s3-lcd -t upload
+```
+
+Use `COM9` by default; replace `upload_port` and `monitor_port` if Windows
+assigns another port. Detailed setup, dependencies, extensions and
+troubleshooting are documented in [docs/T-DISPLAY-S3-LCD.md](docs/T-DISPLAY-S3-LCD.md).
+
 ## Setting up a board
 
 A board without Wi-Fi settings starts in setup and shows how to connect:
