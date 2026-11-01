@@ -125,6 +125,54 @@ Notes:
 - **Cursor** has no hook that fires when it waits for your approval without also answering it, so Cursor sessions show working and your turn, never needs you.
 - Already-running sessions may need a restart to pick up new hooks.
 
+### Kiro
+
+Kiro has a native hook system that posts events directly to the board — no extension or Python needed.
+
+Copy the two files from [`kiro-hooks/`](.kiro/hooks/) into the `.kiro/hooks/` folder of any workspace (or into `~/.kiro/hooks/` to make them global), replacing `<device-ip>` with your board's IP:
+
+**`.kiro/hooks/anu-working.json`**
+
+```json
+{
+  "version": "v1",
+  "hooks": [{
+    "name": "Agent Needs You - Working",
+    "trigger": "UserPromptSubmit",
+    "action": {
+      "type": "command",
+      "command": "curl -sf -X POST http://<device-ip>/hook -H 'Content-Type: application/json' -d '{\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"kiro\",\"agent\":\"kiro\",\"message\":\"\"}'"
+    }
+  }]
+}
+```
+
+**`.kiro/hooks/anu-done.json`**
+
+```json
+{
+  "version": "v1",
+  "hooks": [{
+    "name": "Agent Needs You - Done",
+    "trigger": "Stop",
+    "action": {
+      "type": "command",
+      "command": "curl -sf -X POST http://<device-ip>/hook -H 'Content-Type: application/json' -d '{\"hook_event_name\":\"Stop\",\"session_id\":\"kiro\",\"agent\":\"kiro\",\"message\":\"\"}'"
+    }
+  }]
+}
+```
+
+On **Windows**, `curl` in the hook shell resolves to the real `curl.exe` but PowerShell's alias can interfere. Use this form instead:
+
+```json
+"command": "powershell -Command \"Invoke-WebRequest -Uri 'http://<device-ip>/hook' -Method POST -ContentType 'application/json' -Body '{\\\"hook_event_name\\\":\\\"UserPromptSubmit\\\",\\\"session_id\\\":\\\"kiro\\\",\\\"agent\\\":\\\"kiro\\\",\\\"message\\\":\\\"\\\"}' -UseBasicParsing | Out-Null\""
+```
+
+(Replace `UserPromptSubmit` with `Stop` in the done hook.)
+
+The hooks in this repo under `.kiro/hooks/` already use the Windows form and point to `192.168.68.232`; edit the IP for your board.
+
 ### Anything else
 
 Any script can drive the board directly:
