@@ -6,7 +6,7 @@
   "publisher": "local",
   "engines": { "vscode": "^1.100.0" },
   "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": ["*", "onStartupFinished"],
   "main": "./extension.js",
   "contributes": {
     "configuration": {
