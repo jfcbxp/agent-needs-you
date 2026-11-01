@@ -1,0 +1,37 @@
+{
+  "name": "anu-copilot",
+  "displayName": "Agent Needs You - Copilot",
+  "description": "Reports GitHub Copilot Chat status to an Agent Needs You board.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": { "vscode": "^1.90.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Agent Needs You - Copilot",
+      "properties": {
+        "anuCopilot.boardUrl": {
+          "type": "string",
+          "default": "http://192.168.68.232",
+          "description": "Base URL of the Agent Needs You board."
+        },
+        "anuCopilot.pollIntervalMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 5000,
+          "description": "Copilot session database polling interval."
+        }
+      }
+    },
+    "commands": [
+      { "command": "anuCopilot.setWorking", "title": "Agent Needs You: Set Working" },
+      { "command": "anuCopilot.setNeedsYou", "title": "Agent Needs You: Set Needs You" },
+      { "command": "anuCopilot.setDone", "title": "Agent Needs You: Set Done" },
+      { "command": "anuCopilot.setIdle", "title": "Agent Needs You: Set Idle" },
+      { "command": "anuCopilot.testBoard", "title": "Agent Needs You: Test Board" }
+    ]
+  }
+}

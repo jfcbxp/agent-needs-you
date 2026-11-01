@@ -1,6 +1,6 @@
 // Agent Needs You — desk status light for AI coding agents.
-// LilyGO T-Display S3 AMOLED (ESP32-S3, RM67162 240x536 over QSPI, used
-// landscape). Claude Code hooks POST their raw stdin JSON to /hook; the same
+// LilyGO T-Display S3 LCD (ESP32-S3, ST7789 170x320 over 8-bit I80).
+// Claude Code hooks POST their raw stdin JSON to /hook; the same
 // JSON lines are accepted over USB serial.
 
 #include <Arduino.h>
@@ -21,20 +21,26 @@
 #include "secrets.h"
 #endif
 
-// ---- Pins (LilyGO T-Display S3 AMOLED pins_config.h) ----
+// ---- Pins (confirmed T-Display-S3 LCD ST7789 I80 board) ----
 #define PIN_LCD_CS 6
-#define PIN_LCD_SCK 47
-#define PIN_LCD_D0 18
-#define PIN_LCD_D1 7
-#define PIN_LCD_D2 48
-#define PIN_LCD_D3 5
-#define PIN_LCD_RST 17
-#define PIN_LCD_EN 38  // panel power enable (status LED on v1 boards)
+#define PIN_LCD_DC 7
+#define PIN_LCD_WR 8
+#define PIN_LCD_RD 9
+#define PIN_LCD_RST 5
+#define PIN_LCD_D0 39
+#define PIN_LCD_D1 40
+#define PIN_LCD_D2 41
+#define PIN_LCD_D3 42
+#define PIN_LCD_D4 45
+#define PIN_LCD_D5 46
+#define PIN_LCD_D6 47
+#define PIN_LCD_D7 48
+#define PIN_LCD_EN 38
 #define PIN_BTN_L 0
-#define PIN_BTN_R 21
+#define PIN_BTN_R 14
 
-#define W 536
-#define H 240
+#define W 320
+#define H 170
 
 #define HOSTNAME "claude-light"
 #define SETUP_AFTER_MS (60UL * 1000)        // no Wi-Fi this long after boot: open setup
@@ -61,10 +67,10 @@
 #define POP_MS 600  // eyes boing for this long after a state change
 
 // ---- Layout: eyes on the left, text panel on the right ----
-#define FACE_X 150
-#define FACE_Y 120
-#define PANEL_X 306
-#define PANEL_W (W - PANEL_X - 12)
+#define FACE_X 72
+#define FACE_Y 82
+#define PANEL_X 170
+#define PANEL_W (W - PANEL_X - 8)
 
 // ---- Colours (RGB565), bright accents on AMOLED black ----
 #define C_BLACK 0x0000
@@ -76,8 +82,14 @@
 #define C_IDLE 0x7BD4
 #define C_DIM 0x6B6D
 
-Arduino_DataBus *bus = new Arduino_ESP32QSPI(PIN_LCD_CS, PIN_LCD_SCK, PIN_LCD_D0, PIN_LCD_D1, PIN_LCD_D2, PIN_LCD_D3);
-Arduino_RM67162 *panel = new Arduino_RM67162(bus, PIN_LCD_RST, 1 /* landscape */);
+Arduino_DataBus *bus = new Arduino_ESP32PAR8Q(
+    PIN_LCD_DC, PIN_LCD_CS, PIN_LCD_WR, PIN_LCD_RD,
+    PIN_LCD_D0, PIN_LCD_D1, PIN_LCD_D2, PIN_LCD_D3,
+    PIN_LCD_D4, PIN_LCD_D5, PIN_LCD_D6, PIN_LCD_D7);
+Arduino_ST7789 *panel = new Arduino_ST7789(
+    bus, PIN_LCD_RST, 0 /* init portrait */, true /* IPS */, 170, 320,
+    35 /* column offset 1 */, 0 /* row offset 1 */,
+    35 /* column offset 2 */, 0 /* row offset 2 */);
 Arduino_Canvas *gfx = new Arduino_Canvas(W, H, panel);
 
 WiFiServer server(80);
@@ -378,11 +390,11 @@ static void drawCounts(int x, int y) {
   static const struct { State st; uint16_t c; } chips[] = {
     {ST_NEEDS, C_NEEDS}, {ST_WORKING, C_WORKING}, {ST_DONE, C_DONE}, {ST_IDLE, C_IDLE}};
   for (int i = 0; i < 4; i++) {
-    int n = counts[chips[i].st], cx = x + i * 56;
-    gfx->fillCircle(cx + 7, y - 7, 7, n ? chips[i].c : mix565(chips[i].c, C_BLACK, 0.7f));
+    int n = counts[chips[i].st], cx = x + i * 36;
+    gfx->fillCircle(cx + 5, y - 5, 5, n ? chips[i].c : mix565(chips[i].c, C_BLACK, 0.7f));
     char num[4];
     snprintf(num, sizeof(num), "%d", n);
-    text(u8g2_font_fub14_tr, num, cx + 19, y, n ? C_WHITE : C_DIM);
+    text(u8g2_font_fub14_tr, num, cx + 13, y, n ? C_WHITE : C_DIM);
   }
 }
 
@@ -394,13 +406,13 @@ static void draw() {
 
   if (setupActive) {
     drawFace(gfx, MOOD_CURIOUS, FACE_X, FACE_Y, C_NEEDS, 0);
-    text(u8g2_font_fub25_tr, "Setup", PANEL_X, 52, C_NEEDS);
-    text(u8g2_font_fur14_tr, "On your phone, join", PANEL_X, 92, C_DIM);
+    text(u8g2_font_fub25_tr, "Setup", PANEL_X, 32, C_NEEDS);
+    text(u8g2_font_fur14_tr, "Join WiFi:", PANEL_X, 58, C_DIM);
     gfx->setFont(u8g2_font_fur17_tr);
     gfx->setTextColor(C_WHITE);
-    fitText(apName, PANEL_X, 120, PANEL_W);
-    text(u8g2_font_fur14_tr, "then open", PANEL_X, 160, C_DIM);
-    text(u8g2_font_fur17_tr, "192.168.4.1", PANEL_X, 188, C_WHITE);
+    fitText(apName, PANEL_X, 82, PANEL_W);
+    text(u8g2_font_fur14_tr, "then open", PANEL_X, 108, C_DIM);
+    text(u8g2_font_fur17_tr, "192.168.4.1", PANEL_X, 132, C_WHITE);
     gfx->flush();
     return;
   }
@@ -412,13 +424,13 @@ static void draw() {
     int dx = 12 * sinf(2 * PI * (now % 23000) / 23000);
     int dy = 8 * sinf(2 * PI * (now % 31000) / 31000);
     drawFace(gfx, MOOD_SLEEPY, FACE_X + dx, FACE_Y + dy, C_IDLE, 0);
-    text(u8g2_font_fub25_tr, "Sleeping", PANEL_X + dx, 72 + dy, C_IDLE);
+    text(u8g2_font_fub25_tr, "Sleeping", PANEL_X + dx, 42 + dy, C_IDLE);
     if (WiFi.status() == WL_CONNECTED) {
-      text(u8g2_font_fur17_tr, "no sessions", PANEL_X + dx, 110 + dy, C_DIM);
-      text(u8g2_font_fur14_tr, WiFi.localIP().toString().c_str(), PANEL_X + dx, 184 + dy, C_DIM);
+      text(u8g2_font_fur17_tr, "no sessions", PANEL_X + dx, 76 + dy, C_DIM);
+      text(u8g2_font_fur14_tr, WiFi.localIP().toString().c_str(), PANEL_X + dx, 112 + dy, C_DIM);
     } else {
-      text(u8g2_font_fur17_tr, cfg.ssid[0] ? "wifi..." : "no wifi config", PANEL_X + dx, 110 + dy, C_DIM);
-      text(u8g2_font_fur14_tr, "serial ok", PANEL_X + dx, 184 + dy, C_DIM);
+      text(u8g2_font_fur17_tr, cfg.ssid[0] ? "wifi..." : "no wifi config", PANEL_X + dx, 76 + dy, C_DIM);
+      text(u8g2_font_fur14_tr, "serial ok", PANEL_X + dx, 112 + dy, C_DIM);
     }
     gfx->flush();
     return;
@@ -431,26 +443,26 @@ static void draw() {
   drawFace(gfx, moodOf(s), FACE_X, FACE_Y, col, pop);
 
   static const char *titles[] = {"Idle", "Working", "Your turn", "Needs you"};
-  text(u8g2_font_fub25_tr, titles[s.st], PANEL_X, 44, col);
+  text(u8g2_font_fub25_tr, titles[s.st], PANEL_X, 36, col);
 
   char label[40];
   if (s.agent[0]) snprintf(label, sizeof(label), "%s (%s)", s.project, s.agent);
   else copyStr(label, sizeof(label), s.project);
   gfx->setFont(u8g2_font_fur17_tr);
   gfx->setTextColor(C_WHITE);
-  fitText(label, PANEL_X, 80, PANEL_W);
+  fitText(label, PANEL_X, 66, PANEL_W);
 
   char age[32];
   ageText(age, sizeof(age), s);
-  text(u8g2_font_fur14_tr, age, PANEL_X, 106, C_DIM);
+  text(u8g2_font_fur14_tr, age, PANEL_X, 88, C_DIM);
 
   if (s.st == ST_NEEDS && s.msg[0]) {
     gfx->setFont(u8g2_font_fur14_tr);
     gfx->setTextColor(mix565(C_NEEDS, C_WHITE, 0.6f));
-    wrapText(s.msg, PANEL_X, 136, PANEL_W, 22, 3);
+    wrapText(s.msg, PANEL_X, 112, PANEL_W, 16, 2);
   }
 
-  drawCounts(PANEL_X, 224);
+  drawCounts(PANEL_X, 150);
   gfx->flush();
 }
 
@@ -857,7 +869,22 @@ void setup() {
   pinMode(PIN_BTN_R, INPUT_PULLUP);
   pinMode(PIN_LCD_EN, OUTPUT);
   digitalWrite(PIN_LCD_EN, HIGH);
-  if (!gfx->begin()) Serial.println("display init failed (frame buffer alloc?)");
+  delay(300);
+  pinMode(PIN_LCD_RST, OUTPUT);
+  digitalWrite(PIN_LCD_RST, HIGH);
+  delay(100);
+  digitalWrite(PIN_LCD_RST, LOW);
+  delay(300);
+  digitalWrite(PIN_LCD_RST, HIGH);
+  delay(200);
+  if (gfx->begin()) {
+    panel->setRotation(1);
+    panel->displayOn();
+    gfx->fillScreen(C_WHITE);
+    gfx->flush();
+  } else {
+    Serial.println("display init failed (frame buffer alloc?)");
+  }
   gfx->setTextWrap(false);
   Serial.printf("psram %u free\n", ESP.getFreePsram());
   gfx->fillScreen(C_BLACK);

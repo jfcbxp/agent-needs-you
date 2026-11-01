@@ -1,6 +1,6 @@
 # Agent Needs You
 
-A desk status light for AI coding agents: [Claude Code](https://claude.com/claude-code), Cursor and Codex. A LilyGO T-Display S3 AMOLED shows whether any session is working, finished, or blocked waiting on you, so a permission prompt never sits unnoticed in a background window.
+A desk status light for AI coding agents: Claude Code, Cursor, Codex and GitHub Copilot. A LilyGO T-Display S3 LCD shows whether any session is working, finished, or blocked waiting on you, so a permission prompt never sits unnoticed in a background window.
 
 <p align="center"><img src="docs/states.gif" alt="The board cycling through its states: asleep, working, needs you and your turn" width="480"></p>
 
@@ -24,7 +24,7 @@ The screen rotates through the sessions, most urgent first (needs you > working 
 
 ## Hardware
 
-LilyGO T-Display S3 AMOLED (ESP32-S3R8, 16 MB flash, 8 MB PSRAM, RM67162 240x536 over QSPI). Powered over USB.
+LilyGO T-Display S3 LCD (ESP32-S3R8, 16 MB flash, 8 MB PSRAM, ST7789 170x320 over 8-bit Intel 8080). Powered over USB. LCD pin and software notes are in [docs/T-DISPLAY-S3-LCD.md](docs/T-DISPLAY-S3-LCD.md).
 
 ## Setting up a board
 
